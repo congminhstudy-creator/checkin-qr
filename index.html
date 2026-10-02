@@ -130,6 +130,11 @@
   </div>
 
   <script>
+    // =========================================================================
+    // 1. KHAI BÁO URL WEB APP Ở ĐÂY (NẰM NGAY ĐẦU THẺ SCRIPT)
+    // Thay link ví dụ bên dưới bằng URL Deploy thực tế từ Google Apps Script của bạn
+    // =========================================================================
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzfbrRUteRWUYdksx4F2jDsMC6qwavkMYJ5FPZSrBHJel80WcRL05IJV98QMsnHxzaY/exec";
     let html5QrCode = null;
     let isProcessing = false;
     let isCameraActive = false;
@@ -176,27 +181,41 @@
     }
 
     function connectSheet() {
-      const statusEl = document.getElementById('config-status');
-      statusEl.innerText = "Đang kết nối...";
-      const input = getSheetInput();
-      const name = getSheetName();
+  const statusEl = document.getElementById('config-status');
+  statusEl.innerText = "Đang kết nối...";
+  const input = getSheetInput();
+  const name = getSheetName();
 
-      google.script.run.withSuccessHandler(function(res) {
-        if (res.status === 'SUCCESS') {
-          statusEl.innerText = "✓ Đã kết nối: " + res.title + " (" + res.sheetName + ")";
-          statusEl.className = "text-emerald-300 text-[11px] font-medium";
-          document.getElementById('stat-total').innerText = res.stats.total;
-          document.getElementById('stat-checked').innerText = res.stats.checkedIn;
-          document.getElementById('stat-remain').innerText = res.stats.remaining;
-          
-          localStorage.setItem('saved_sheet_input', input);
-          localStorage.setItem('saved_sheet_name', name);
-        } else {
-          statusEl.innerText = "✕ " + res.message;
-          statusEl.className = "text-rose-300 text-[11px] font-medium";
-        }
-      }).connectSheet(input, name);
+  fetch(GAS_WEB_APP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({
+      action: "connect",
+      sheetInput: input,
+      sheetName: name
+    })
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.status === 'SUCCESS') {
+      statusEl.innerText = "✓ Đã kết nối: " + res.title + " (" + res.sheetName + ")";
+      statusEl.className = "text-emerald-300 text-[11px] font-medium";
+      document.getElementById('stat-total').innerText = res.stats.total;
+      document.getElementById('stat-checked').innerText = res.stats.checkedIn;
+      document.getElementById('stat-remain').innerText = res.stats.remaining;
+      
+      localStorage.setItem('saved_sheet_input', input);
+      localStorage.setItem('saved_sheet_name', name);
+    } else {
+      statusEl.innerText = "✕ " + res.message;
+      statusEl.className = "text-rose-300 text-[11px] font-medium";
     }
+  })
+  .catch(err => {
+    statusEl.innerText = "✕ Lỗi kết nối API máy chủ!";
+    statusEl.className = "text-rose-300 text-[11px] font-medium";
+  });
+}
 
     window.onload = function() {
       const savedInput = localStorage.getItem('saved_sheet_input');
@@ -275,23 +294,23 @@ function scanImage(event) {
       }
     }
 
-    function processCheckIn(code, exactIndex = null) {
+   function processCheckIn(code, exactIndex = null) {
   isProcessing = true;
+  const input = getSheetInput();
+  const name = getSheetName();
   
-  // Dán URL Web App bạn đã sao chép ở Bước 1 vào đây:
-  const gasWebAppUrl = "DÁN_LINK_DEPLOY_CỦA_BẠN_VÀO_ĐÂY";
-
-  fetch(gasWebAppUrl, {
+  fetch(GAS_WEB_APP_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({
+      action: "checkIn",
       queryCode: code,
-      sheetInput: getSheetInput(),
-      sheetName: getSheetName(),
+      sheetInput: input,
+      sheetName: name,
       exactIndex: exactIndex
     })
   })
-  .then(response => response.json())
+  .then(res => res.json())
   .then(res => {
     if (res.status === 'MULTIPLE_MATCHES') {
       showMultiModal(res);
@@ -302,10 +321,9 @@ function scanImage(event) {
   })
   .catch(err => {
     closeMultiModal();
-    showModal({ status: "ERROR", message: "Lỗi kết nối API!" });
+    showModal({ status: "ERROR", message: "Lỗi kết nối máy chủ API!" });
   });
 }
-
     // Hiển thị danh sách khách trùng tên để bấm chọn
     function showMultiModal(res) {
       const modal = document.getElementById('multi-modal');
