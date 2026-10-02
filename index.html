@@ -134,7 +134,7 @@
     // 1. KHAI BÁO URL WEB APP Ở ĐÂY (NẰM NGAY ĐẦU THẺ SCRIPT)
     // Thay link ví dụ bên dưới bằng URL Deploy thực tế từ Google Apps Script của bạn
     // =========================================================================
-    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzfbrRUteRWUYdksx4F2jDsMC6qwavkMYJ5FPZSrBHJel80WcRL05IJV98QMsnHxzaY/exec";
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyzWtArxl01rUOt45Bcg8gieKVcXCfLCg-zQwM9Mp43yVxwqI9D1PWAzvQjlPbFjXpuCg/exec";
     let html5QrCode = null;
     let isProcessing = false;
     let isCameraActive = false;
@@ -182,6 +182,15 @@
 
     function connectSheet() {
   const statusEl = document.getElementById('config-status');
+  const input = getSheetInput();
+  const name = getSheetName();
+
+  if (!input) {
+    statusEl.innerText = "⚠️ Vui lòng dán Link hoặc ID Google Sheet!";
+    statusEl.className = "text-amber-200 text-[11px] font-medium";
+    document.getElementById('config-box').classList.remove('hidden'); // Tự mở khung cấu hình nếu chưa dán link
+    return;
+  }
   statusEl.innerText = "Đang kết nối...";
   const input = getSheetInput();
   const name = getSheetName();
